@@ -12,7 +12,8 @@ import logging
 # 4. fix hardcoded board dimensions
 # 5. Add scoring, hud
 # 6. add additional configuration options (e.g. tick speed, starting length, toggle walls) and CLI
-# 7. Bugsquash
+# 7. menu and restart
+# 8. Bugsquash
 #    - what happens if the apple is placed inside the snake's body?
 #    - make sure apple is placed within display area?
 
@@ -32,7 +33,6 @@ class Snake:
 
     def __init__(self, head_color: str = "red", body_color: str = "green"):
         self._stack = [(20, 20), (20, 21), (20, 22), (20, 23)]
-        self.length = len(self._stack)  # this should be a property
         self._direction = Direction.UP
         self.head_color = head_color
         self.body_color = body_color
@@ -44,6 +44,10 @@ class Snake:
     @property
     def tail(self):
         return self._stack[1:]
+
+    @property
+    def length(self):
+        return len(self._stack)
 
     def move(self):
         head = self._stack.pop(0)
@@ -76,7 +80,6 @@ class Snake:
             self._direction = new_direction
 
     def is_self_intersecting(self):
-        # logging.warning(f"{self.head}, {self.tail}, {self.head in self.tail}")
         return self.head in self.tail
 
 
@@ -106,7 +109,6 @@ class GameState:
 
     @property
     def gameover(self):
-        # logging.warning(f"{not self.snake.is_self_intersecting()}")
         return self.snake.is_self_intersecting()
 
     @property
@@ -123,28 +125,32 @@ class GameState:
         self.snake.extend()
 
 
-class GameBoard:
+class GameBoard(tk.Canvas):
     def __init__(
-        self, parent: tk.Widget, background: str = "black", tile_size: int = 10
+        self,
+        *args,
+        tile_size: int = 10,
+        **kwargs,
     ):
+        super().__init__(*args, **kwargs)
         self.tile_size = tile_size
-        self._canvas = tk.Canvas(
-            parent,
-            # width=parent.winfo_screenwidth(),
-            # height=parent.winfo_screenheight(),
-            width=1000,  # Hardcoded board dimensions
-            height=1000,
-            background=background,
-        )
-        self._canvas.pack()
+        # self._canvas = tk.Canvas(
+        #     parent,
+        #     # width=parent.winfo_screenwidth(),
+        #     # height=parent.winfo_screenheight(),
+        #     width=1000,  # Hardcoded board dimensions
+        #     height=1000,
+        #     background=background,
+        # )
+        # self._canvas.pack()
 
     def render(self, state):
         # clear the canvas
-        self._canvas.delete(tk.ALL)
+        self.delete(tk.ALL)
 
         # draw the snake's head
         head = state.snake._stack[0]
-        self._canvas.create_rectangle(
+        self.create_rectangle(
             head[0] * self.tile_size,
             head[1] * self.tile_size,
             head[0] * self.tile_size + self.tile_size,
@@ -154,7 +160,7 @@ class GameBoard:
 
         # draw the snake's body
         for cell in state.snake._stack[1:]:
-            self._canvas.create_rectangle(
+            self.create_rectangle(
                 cell[0] * self.tile_size,
                 cell[1] * self.tile_size,
                 cell[0] * self.tile_size + self.tile_size,
@@ -164,7 +170,7 @@ class GameBoard:
 
         # draw the apple
         # print(self.state.apple.x, self.state.apple.y, self.state.apple.color)
-        self._canvas.create_rectangle(
+        self.create_rectangle(
             state.apple.x * self.tile_size,
             state.apple.y * self.tile_size,
             state.apple.x * self.tile_size + self.tile_size,
@@ -189,12 +195,13 @@ class App(tk.Tk):
         self._frame = tk.Frame(self)
         self._frame.pack()
         self.state = GameState()
-        self.board = GameBoard(self._frame)
+        self.board = GameBoard(self._frame, width=1000, height=1000, background="black")
+        self.board.pack()
         self._key = None
         self.bind("<Key>", self.set_key_event)
 
     def set_key_event(self, event):
-        logging.warning(event)
+        # logging.warning(event)
         if event.keysym in App.KEYS:
             self._key = event.keysym
 
@@ -214,7 +221,7 @@ class App(tk.Tk):
             self.state.snake.move()
             if self.state.snake.head == self.state.apple.coordinates:
                 self.state.consume_apple()
-            self.board._canvas.after(200, self.game_loop)
+            self.after(200, self.game_loop)
         else:
             logging.error("YOU DIED")
 
