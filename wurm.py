@@ -83,7 +83,7 @@ class Snake:
 
 
 class Apple:
-    def __init__(self, color: str = "yellow", board_dimension=1000, tile_size=10):
+    def __init__(self, board_dimension, tile_size, color: str = "yellow"):
         self._x: int = random.randint(1, board_dimension // tile_size)
         self._y: int = random.randint(1, board_dimension // tile_size)
         self.color = color
@@ -102,9 +102,16 @@ class Apple:
 
 
 class GameState:
-    def __init__(self):
+    def __init__(self, board):
+        self._board = board
         self._snake = Snake()
-        self._apple = Apple()
+        self._apple = Apple(
+            board_dimension=int(self.board["width"]), tile_size=self.board.tile_size
+        )
+
+    @property
+    def board(self):
+        return self._board
 
     @property
     def gameover(self):
@@ -118,9 +125,14 @@ class GameState:
     def apple(self):
         return self._apple
 
+    @apple.setter
+    def apple(self, apple):
+        self._apple = apple
+
     def consume_apple(self):
-        self._apple = Apple()
-        logging.warning(f"{self._apple.coordinates}")
+        self.apple = Apple(
+            board_dimension=int(self.board["width"]), tile_size=self.board.tile_size
+        )
         self.snake.extend()
 
 
@@ -128,7 +140,7 @@ class GameBoard(tk.Canvas):
     def __init__(
         self,
         *args,
-        tile_size: int = 10,
+        tile_size: int,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -186,14 +198,16 @@ class App(tk.Tk):
         tk.Tk.__init__(self, screenName, baseName, className, usetk, sync, use)
         self._frame = tk.Frame(self)
         self._frame.pack()
-        self.state = GameState()
-        self.board = GameBoard(
-            self._frame,
-            width=board_width * tile_size,
-            height=board_height * tile_size,
-            background="black",
+        self.state = GameState(
+            GameBoard(
+                self._frame,
+                width=board_width * tile_size,
+                height=board_height * tile_size,
+                background="black",
+                tile_size=tile_size,
+            )
         )
-        self.board.pack()
+        self.state.board.pack()
         self._key = None
         self.bind("<Key>", self.handle_keys)
 
@@ -203,7 +217,7 @@ class App(tk.Tk):
 
     def game_loop(self):
         if not self.state.gameover:
-            self.board.render(self.state)
+            self.state.board.render(self.state)
             if self._key:
                 match self._key:
                     case "w" | "Up":
@@ -215,7 +229,8 @@ class App(tk.Tk):
                     case "d" | "Right":
                         self.state.snake.direction = Direction.RIGHT
             self.state.snake.move(
-                board_dimension=int(self.board["width"]), tile_size=self.board.tile_size
+                board_dimension=int(self.state.board["width"]),
+                tile_size=self.state.board.tile_size,
             )
             if self.state.snake.head == self.state.apple.coordinates:
                 self.state.consume_apple()
@@ -229,5 +244,5 @@ class App(tk.Tk):
 
 
 if __name__ == "__main__":
-    App().mainloop()
+    App(board_height=50, board_width=50).mainloop()
 #
