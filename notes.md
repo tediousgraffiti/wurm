@@ -31,7 +31,9 @@
 
 ## Free notes
 
-* Seems like GameState depends on GameBoard and vice-versa?
+* Seems like GameState depends on GameBoard and vice-versa?i
+
+* factor out the App logic (`GameState`, `def game_loop`) into a toplevel `App(Tk)` class and separate it from the GameBoard class. Change the GameBoard class to inherit from Canvas - board "is a" Canvas not "has a" Canvas. App "has a" GameBoard.
 
 ## Example Implementations
 
